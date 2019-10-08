@@ -59,18 +59,6 @@ class pdfDataObject:
                 self.data["author2"] = ""
 
 
-def main():
-    mdb = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        passwd="tacobutt555",
-        database="testDB"
-    )
-    myCursor = mdb.cursor()
-    sqlFormula = "UPDATE students SET age = 12 WHERE name = 'Joe'"
-    myCursor.execute(sqlFormula)
-    mdb.commit()
-
         
             
 
