@@ -2,6 +2,10 @@ import re
 import glob
 from tika import parser
 import mysql.connector
+from bs4 import BeautifulSoup
+from urllib.request import urlopen 
+import os 
+
 
 class pdfDataObject:
     keys = ["analysis", "software", "embedded", "database", "spreadsheet", "firmware", "calculation", "programming", "test"]
@@ -59,8 +63,8 @@ class pdfDataObject:
                 self.data["author2"] = ""
 
 
-        
-            
+
+
 
 
 
