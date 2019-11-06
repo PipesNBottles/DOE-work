@@ -64,7 +64,20 @@ class pdfDataObject:
 
 
 
-
+def main():
+    URL = "https://www.dnfsb.gov/" #input("Enter the site URL: ")
+    page = urlopen(URL)
+    parseDoc = BeautifulSoup(page, features="lxml")
+    page.close()
+    links = parseDoc.find_all(href=re.compile("reports"), limit=2)
+    links = links[0]
+    URL = URL +links["href"]
+    print(URL)
+    
+    
+    
+        
+        
 
 
 
