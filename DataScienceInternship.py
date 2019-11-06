@@ -71,11 +71,15 @@ def main():
     page.close()
     links = parseDoc.find_all(href=re.compile("reports"), limit=2)
     links = links[0]
+    
     URL = URL +links["href"]
+    page = urlopen(URL)
+    parseDoc = BeautifulSoup(page, features="lxml")
+    page.close()
+    links = parseDoc.find(attrs={"class": "leaf first"})
+    another = links.a
+    URL = URL + another["href"]
     print(URL)
-    
-    
-    
         
         
 
