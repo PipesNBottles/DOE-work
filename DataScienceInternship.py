@@ -61,29 +61,22 @@ class pdfDataObject:
                         if initials[j] in namesWithInitials[i]:
                             self.data["author1"] = namesWithInitials[i]
                 self.data["author2"] = ""
-
-
-
-def main():
-    URL = "https://www.dnfsb.gov/" #input("Enter the site URL: ")
-    page = urlopen(URL)
-    parseDoc = BeautifulSoup(page, features="lxml")
-    page.close()
-    links = parseDoc.find_all(href=re.compile("reports"), limit=2)
-    links = links[0]
     
-    URL = URL +links["href"]
-    page = urlopen(URL)
-    parseDoc = BeautifulSoup(page, features="lxml")
-    page.close()
-    links = parseDoc.find(attrs={"class": "leaf first"})
-    another = links.a
-    URL = URL + another["href"]
-    print(URL)
+    def parseURL(self, doesite):
+        print("site URL is https://www.dnfsb.gov/")
+        URL = doesite 
+        page = urlopen(URL)
+        parseDoc = BeautifulSoup(page, features="lxml")
+        page.close()
+        links = parseDoc.find_all(href=re.compile("reports"), limit=2)
+        links = links[0]
         
-        
-
-
-
-if __name__ == "__main__":
-    main()
+        URL = URL +links["href"]
+        page = urlopen(URL)
+        parseDoc = BeautifulSoup(page, features="lxml")
+        page.close()
+        links = parseDoc.find(attrs={"class": "leaf first"})
+        another = links.a
+        URL = URL + another["href"]
+        return URL
+    
