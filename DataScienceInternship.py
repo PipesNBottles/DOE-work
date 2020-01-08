@@ -10,7 +10,7 @@ import os
 class pdfDataObject:
     keys = ["analysis", "software", "embedded", "database", "spreadsheet", "firmware", "calculation", "programming", "test"]
     
-    def __init__(self,path):
+    def __init__(self,path): #hardcode download folder
         self.data = {}
         self.path = path
     
@@ -62,7 +62,7 @@ class pdfDataObject:
                             self.data["author1"] = namesWithInitials[i]
                 self.data["author2"] = ""
     
-    def parseURL(self, doesite):
+    def parseURL(self, doesite): #make recursive general function
         print("site URL is https://www.dnfsb.gov/")
         URL = doesite 
         page = urlopen(URL)
@@ -80,3 +80,33 @@ class pdfDataObject:
         URL = URL + another["href"]
         return URL
     
+def main():
+    print("site URL is https://www.dnfsb.gov/")
+    URL =  "https://www.dnfsb.gov/"
+    page = urlopen(URL)
+    parseDoc = BeautifulSoup(page, features="lxml")
+    page.close()
+    links = parseDoc.find_all(href=re.compile("reports"), limit=2)
+    links = links[0]
+    
+    URL = URL +links["href"]
+    page = urlopen(URL)
+    parseDoc = BeautifulSoup(page, features="lxml")
+    page.close()
+    links = parseDoc.find(attrs={"class": "leaf first"})
+    another = links.a
+    URL = URL + another["href"]
+    print(URL)
+    
+    response = urlopen(URL).read()
+    soup = BeautifulSoup(response,features="lxml")
+    links = soup.find_all("a", href=re.compile(r'(.pdf)'))
+    
+    allPDFs = []
+    
+    for link in links:
+        print(link["href"])
+
+
+if __name__ == "__main__":
+    main()
