@@ -3,27 +3,33 @@ import glob
 from tika import parser
 import mysql.connector
 from bs4 import BeautifulSoup
-from urllib.request import urlopen 
-import os 
+import urllib.request
+import sys, os
+from pathlib import Path
 
 
 class pdfDataObject:
     keys = ["analysis", "software", "embedded", "database", "spreadsheet", "firmware", "calculation", "programming", "test"]
     
-    def __init__(self,path): #hardcode download folder
+    def __init__(self,link):
         self.data = {}
-        self.path = path
+        self.path = Path(__file__).parent
+        self.link = link
     
     def showInfo(self):
         for key, value in self.data.items():
             print(key, " -> ",value)
 
     
-    def build(self):
-        files = glob.glob(self.path)
-        if len(files) > 1: 
-            files.sort()
-        for file in files:
+    def build(self,allPDFs):
+        for pdf in allPDFs:
+            split = urllib.parse.urlparse(pdf).path
+            fileName = urllib.parse.unquote(split)
+            fileName = fileName.split("/")[-1]
+            path = self.path.joinpath(fileName)
+            urllib.request.urlretrieve(pdf,path)
+            file = str(path)
+            
             raw = parser.from_file(file)
             text = raw['content']
             title = raw['metadata']['dc:title']
@@ -50,7 +56,7 @@ class pdfDataObject:
                 if len(initials) >= 2:
                     self.data["author1"] = initials[1]
                     self.data["author2"] = initials[2]
-                else:
+                else: #fix this, when length == 1 it breaks
                     self.data["author1"] = initials[1]
                     self.data["author2"] = ""
             else:
@@ -62,51 +68,45 @@ class pdfDataObject:
                             self.data["author1"] = namesWithInitials[i]
                 self.data["author2"] = ""
     
-    def parseURL(self, doesite): #make recursive general function
-        print("site URL is https://www.dnfsb.gov/")
-        URL = doesite 
-        page = urlopen(URL)
+    def parseURL(self): #eliminate this, better idea later
+        print("site URL is ", self.link)
+        URL = self.link 
+        page = urllib.request.urlopen(URL).read()
         parseDoc = BeautifulSoup(page, features="lxml")
-        page.close()
         links = parseDoc.find_all(href=re.compile("reports"), limit=2)
         links = links[0]
         
         URL = URL +links["href"]
-        page = urlopen(URL)
+        page = urllib.request.urlopen(URL).read()
         parseDoc = BeautifulSoup(page, features="lxml")
-        page.close()
         links = parseDoc.find(attrs={"class": "leaf first"})
         another = links.a
         URL = URL + another["href"]
         return URL
     
-def main():
-    print("site URL is https://www.dnfsb.gov/")
-    URL =  "https://www.dnfsb.gov/"
-    page = urlopen(URL)
-    parseDoc = BeautifulSoup(page, features="lxml")
-    page.close()
-    links = parseDoc.find_all(href=re.compile("reports"), limit=2)
-    links = links[0]
     
-    URL = URL +links["href"]
-    page = urlopen(URL)
-    parseDoc = BeautifulSoup(page, features="lxml")
-    page.close()
-    links = parseDoc.find(attrs={"class": "leaf first"})
-    another = links.a
-    URL = URL + another["href"]
-    print(URL)
-    
-    response = urlopen(URL).read()
-    soup = BeautifulSoup(response,features="lxml")
-    links = soup.find_all("a", href=re.compile(r'(.pdf)'))
-    
-    allPDFs = []
-    
-    for link in links:
-        print(link["href"])
+    def collectAll(self,pdfPage,allPDFs):
+        response = urllib.request.urlopen(pdfPage).read()
+        soup = BeautifulSoup(response,features="lxml")
+        links = soup.find_all("a", href=re.compile(r'(.pdf)'))
+        for link in links:
+            allPDFs.append(link["href"])
 
+        links = soup.find("a", string=re.compile("next"))
+        if links is None or len(allPDFs) >= 10:
+            return allPDFs
+        else:
+            pdfPage = self.link + links.get("href")
+            return self.collectAll(pdfPage,allPDFs)
+        
+    
+def main():
+    allPDFs = []
+    pdfobj = pdfDataObject("https://www.dnfsb.gov/")
+    URL = pdfobj.parseURL()
+    allPdfs = pdfobj.collectAll(URL,allPDFs)
+    pdfobj.build(allPDFs)
+    pdfobj.showInfo()
 
 if __name__ == "__main__":
     main()
