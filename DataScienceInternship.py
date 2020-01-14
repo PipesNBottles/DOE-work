@@ -27,7 +27,8 @@ class pdfDataObject:
             fileName = urllib.parse.unquote(split)
             fileName = fileName.split("/")[-1]
             path = self.path.joinpath(fileName)
-            urllib.request.urlretrieve(pdf,path)
+            if not path.exists(): 
+                urllib.request.urlretrieve(pdf,path)
             file = str(path)
             
             raw = parser.from_file(file)
@@ -46,17 +47,23 @@ class pdfDataObject:
                     self.data[key] = True
                 else:
                     self.data[key] = False
-            if not "Savannah" in self.data["Site"]:
+            if not "Savannah" in self.data["Site"]: 
                 initials = re.findall(r"[A-Z]\.\s[A-Z][a-z]*",text,re.MULTILINE)
+                fullName = re.findall(r"[A-Z][a-z]{6}\s[A-Z]\D\w+",text,re.MULTILINE)
                 namesWithInitials = re.findall(r"[A-Z][a-z]+\s.\.\B\s\w*",text,re.MULTILINE)
             else:
                 initials = re.findall(r"[A-Z]\.\s[A-Z]\w+",text,re.MULTILINE)
+                fullName = re.findall(r"[A-Z][a-z]{6}\s[A-Z]\D\w+",text,re.MULTILINE)
                 namesWithInitials = re.findall(r"[A-Z][a-z]+\s.\.\B\s\w*",text,re.MULTILINE)
+            if fullName:
+                self.data["author1"] = fullName[0]
+                if len(fullName) > 1:
+                    self.data["author2"] = fullName[1]
             if len(namesWithInitials) < 2:
                 if len(initials) >= 2:
                     self.data["author1"] = initials[1]
                     self.data["author2"] = initials[2]
-                else: #fix this, when length == 1 it breaks
+                elif len(initials) != 1: 
                     self.data["author1"] = initials[1]
                     self.data["author2"] = ""
             else:
@@ -66,7 +73,9 @@ class pdfDataObject:
                     for j in range(len(initials)):
                         if initials[j] in namesWithInitials[i]:
                             self.data["author1"] = namesWithInitials[i]
-                self.data["author2"] = ""
+                if not "author2" in self.data:
+                    self.data["author2"] = ""
+                
     
     def parseURL(self): #eliminate this, better idea later
         print("site URL is ", self.link)
