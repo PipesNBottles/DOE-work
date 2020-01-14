@@ -36,13 +36,12 @@ class pdfDataObject:
             raw = parser.from_file(file)
             text = raw['content']
             title = raw['metadata']['dc:title']
-            if "Savannah" in title:
-                title = title.split(sep=" ",maxsplit=3)
-                self.data["Site"] = title[0] + " " + title[1]
+            title = title.split(sep=" ",maxsplit=3)
+            if "Week" in title[1]:
+                self.data["Site"] = title[0]
                 self.data["Date"] = title[3]
             else:
-                title = title.split(sep=" ",maxsplit=3)
-                self.data["Site"] = title[0]
+                self.data["Site"] = title[0] + " " + title[1]
                 self.data["Date"] = title[3]
             for key in self.keys:
                 if text.find(key) != -1:
