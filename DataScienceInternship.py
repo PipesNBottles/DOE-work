@@ -19,6 +19,8 @@ class pdfDataObject:
     def showInfo(self):
         for key, value in self.data.items():
             print(key, " -> ",value)
+        print()
+        print("###########################################")
 
     
     def build(self,allPDFs):
@@ -59,13 +61,16 @@ class pdfDataObject:
                 self.data["author1"] = fullName[0]
                 if len(fullName) > 1:
                     self.data["author2"] = fullName[1]
-            if len(namesWithInitials) < 2:
-                if len(initials) >= 2:
+            if len(namesWithInitials) <= 2:
+                if len(initials) > 2:
                     self.data["author1"] = initials[1]
                     self.data["author2"] = initials[2]
                 elif len(initials) != 1: 
                     self.data["author1"] = initials[1]
-                    self.data["author2"] = ""
+                    if fullName:
+                        self.data["author2"] = fullName[0]
+                    else:
+                        self.data["author2"] = ""
             else:
                 namesWithInitials.pop(0)
                 initials.pop(0)
@@ -73,8 +78,12 @@ class pdfDataObject:
                     for j in range(len(initials)):
                         if initials[j] in namesWithInitials[i]:
                             self.data["author1"] = namesWithInitials[i]
-                if not "author2" in self.data:
+                if not "author2" in self.data and fullName:
+                    self.data["author2"] = fullName[0]
+                else:
                     self.data["author2"] = ""
+            self.showInfo()
+            self.data.clear()
                 
     
     def parseURL(self): #eliminate this, better idea later
@@ -115,7 +124,7 @@ def main():
     URL = pdfobj.parseURL()
     allPdfs = pdfobj.collectAll(URL,allPDFs)
     pdfobj.build(allPDFs)
-    pdfobj.showInfo()
+    
 
 if __name__ == "__main__":
     main()
