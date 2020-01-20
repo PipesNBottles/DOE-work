@@ -16,6 +16,44 @@ class pdfDataObject:
         self.path = Path(__file__).parent
         self.link = link
     
+    def create_connectDB(self):
+        path = Path(__file__).parent
+        db = "DOE.db" #come up with better name for database later
+        path = path.joinpath(db)
+        path = str(path)
+        conn = sqlite3.connect(path) 
+        cursor = conn.cursor()
+        cursor.execute(''' SELECT count(name) 
+                       FROM sqlite_master WHERE type='table' 
+                       AND name='DOE-BASE' ''')
+        
+        if cursor.fetchone()[0] == 1:
+            return path
+        
+        cursor.execute(
+        """
+        --sql
+        create table [DOE-BASE](
+            ID TEXT PRIMARY KEY,
+            SITE TEXT,
+            AUTHOR_1 TEXT,
+            AUTHOR_2 TEXT,
+            ANALYSIS INTEGER,
+            SOFTWARE INTEGER,
+            EMBEDDED INTEGER,
+            DATABASE INTEGER,
+            SPREADSHEET INTEGER,
+            FIRMWARE INTEGER,
+            CALCULATION INTEGER,
+            PROGRAMMING INTEGER,
+            TEST INTEGER
+        )
+        ;
+        """
+        )
+        conn.close()
+        return path
+    
     def showInfo(self):
         print()
         for key, value in self.data.items():
@@ -128,28 +166,12 @@ def main():
     
     allPDFs = []
     pdfobj = pdfDataObject("https://www.dnfsb.gov/")
+    db = pdfobj.create_connectDB()
     URL = pdfobj.parseURL()
     allPdfs = pdfobj.collectAll(URL,allPDFs)
-    pdfobj.build(allPDFs) 
+    pdfobj.build(allPDFs)
    
     
-    """ path = Path(__file__).parent
-    db = "test.db" #come up with better name for database latter
-    path = path.joinpath(db)
-    path = str(path)
-    conn = sqlite3.connect(path) 
-    cursor = conn.cursor()
-    cursor.execute(
-    --sql
-    select count(Name) from sqlite_master
-    where type='table' and name='test'
-    ;
-    )
-    if cursor.fetchone()[0] == 1:
-        print("table exists")
-    else:
-        print("table does not exist")
-     """
     
 if __name__ == "__main__":
     main()
