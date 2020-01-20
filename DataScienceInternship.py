@@ -47,10 +47,9 @@ class pdfDataObject:
                 self.data["Date"] = dateInfo[1]
             if 'dateInfo' in locals():
                 dateobj = datetime.strptime(dateInfo[1],'%B %d, %Y')
-                self.data["ID"] = title[0][0] + str(dateobj.date())
             else:
                 dateobj = datetime.strptime(title[3],'%B %d, %Y')
-                self.data["ID"] = title[0][0] + str(dateobj.date())
+            self.data["ID"] = title[0][0] + str(dateobj.date())
             for key in self.keys:
                 if text.find(key) != -1:
                     self.data[key] = True
