@@ -1,12 +1,12 @@
 import re
 import glob
 from tika import parser
-import mysql.connector
+import sqlite3
 from bs4 import BeautifulSoup
 import urllib.request
 import sys, os
 from pathlib import Path
-
+from datetime import datetime
 
 class pdfDataObject:
     keys = ["analysis", "software", "embedded", "database", "spreadsheet", "firmware", "calculation", "programming", "test"]
@@ -17,6 +17,7 @@ class pdfDataObject:
         self.link = link
     
     def showInfo(self):
+        print()
         for key, value in self.data.items():
             print(key, " -> ",value)
         print()
@@ -42,7 +43,14 @@ class pdfDataObject:
                 self.data["Date"] = title[3]
             else:
                 self.data["Site"] = title[0] + " " + title[1]
-                self.data["Date"] = title[3]
+                dateInfo = title[3].split(sep=" ", maxsplit=1)
+                self.data["Date"] = dateInfo[1]
+            if 'dateInfo' in locals():
+                dateobj = datetime.strptime(dateInfo[1],'%B %d, %Y')
+                self.data["ID"] = title[0][0] + str(dateobj.date())
+            else:
+                dateobj = datetime.strptime(title[3],'%B %d, %Y')
+                self.data["ID"] = title[0][0] + str(dateobj.date())
             for key in self.keys:
                 if text.find(key) != -1:
                     self.data[key] = True
@@ -118,12 +126,31 @@ class pdfDataObject:
         
     
 def main():
+    
     allPDFs = []
     pdfobj = pdfDataObject("https://www.dnfsb.gov/")
     URL = pdfobj.parseURL()
     allPdfs = pdfobj.collectAll(URL,allPDFs)
-    pdfobj.build(allPDFs)
+    pdfobj.build(allPDFs) 
+   
     
-
+    """ path = Path(__file__).parent
+    db = "test.db" #come up with better name for database latter
+    path = path.joinpath(db)
+    path = str(path)
+    conn = sqlite3.connect(path) 
+    cursor = conn.cursor()
+    cursor.execute(
+    --sql
+    select count(Name) from sqlite_master
+    where type='table' and name='test'
+    ;
+    )
+    if cursor.fetchone()[0] == 1:
+        print("table exists")
+    else:
+        print("table does not exist")
+     """
+    
 if __name__ == "__main__":
     main()
