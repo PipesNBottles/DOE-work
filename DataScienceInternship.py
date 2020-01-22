@@ -23,36 +23,54 @@ class pdfDataObject:
         path = str(path)
         conn = sqlite3.connect(path) 
         cursor = conn.cursor()
-        cursor.execute(''' SELECT count(name) 
-                       FROM sqlite_master WHERE type='table' 
-                       AND name='DOE-BASE' ''')
-        
-        if cursor.fetchone()[0] == 1:
-            return path
-        
-        cursor.execute(
-        """
-        --sql
-        create table [DOE-BASE](
-            ID TEXT PRIMARY KEY,
-            SITE TEXT,
-            AUTHOR_1 TEXT,
-            AUTHOR_2 TEXT,
-            ANALYSIS INTEGER,
-            SOFTWARE INTEGER,
-            EMBEDDED INTEGER,
-            DATABASE INTEGER,
-            SPREADSHEET INTEGER,
-            FIRMWARE INTEGER,
-            CALCULATION INTEGER,
-            PROGRAMMING INTEGER,
-            TEST INTEGER
-        )
-        ;
-        """
-        )
-        conn.close()
+        try:
+            cursor.execute(
+            """
+            --sql
+            create table DOE_BASE(
+                ID TEXT PRIMARY KEY,
+                DATE TEXT,
+                SITE TEXT,
+                AUTHOR_1 TEXT,
+                AUTHOR_2 TEXT,
+                ANALYSIS INTEGER,
+                SOFTWARE INTEGER,
+                EMBEDDED INTEGER,
+                DATABASE INTEGER,
+                SPREADSHEET INTEGER,
+                FIRMWARE INTEGER,
+                CALCULATION INTEGER,
+                PROGRAMMING INTEGER,
+                TEST INTEGER
+            );
+            """
+            )
+            conn.commit()
+            conn.close()
+        except sqlite3.OperationalError as dbExists:
+            pass
         return path
+    
+    def insertValues(self,path):
+        toople = (self.data["ID"],self.data["Date"],self.data["Site"],self.data["author1"],
+                  self.data["author2"],self.data["analysis"],self.data["software"],
+                  self.data["embedded"], self.data["database"],self.data["spreadsheet"],
+                  self.data["firmware"],self.data["calculation"],self.data["programming"],
+                  self.data["test"])
+        conn = sqlite3.connect(path) 
+        cursor = conn.cursor()
+        cursor.execute("""
+        --sql
+        INSERT OR IGNORE INTO DOE_BASE 
+        (ID, DATE, SITE, AUTHOR_1, AUTHOR_2, 
+        ANALYSIS, SOFTWARE, EMBEDDED, DATABASE, SPREADSHEET, FIRMWARE, 
+        CALCULATION, PROGRAMMING, TEST)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+        """, (toople))
+        conn.commit()
+        conn.close()
+        
+        
     
     def showInfo(self):
         print()
@@ -62,7 +80,7 @@ class pdfDataObject:
         print("###########################################")
 
     
-    def build(self,allPDFs):
+    def build(self,allPDFs,dbpath):
         for pdf in allPDFs:
             split = urllib.parse.urlparse(pdf).path
             fileName = urllib.parse.unquote(split)
@@ -90,9 +108,9 @@ class pdfDataObject:
             self.data["ID"] = title[0][0] + str(dateobj.date())
             for key in self.keys:
                 if text.find(key) != -1:
-                    self.data[key] = True
+                    self.data[key] = 1
                 else:
-                    self.data[key] = False
+                    self.data[key] = 0
             if not "Savannah" in self.data["Site"]: 
                 initials = re.findall(r"[A-Z]\.\s[A-Z][a-z]*",text,re.MULTILINE)
                 fullName = re.findall(r"[A-Z][a-z]{6}\s[A-Z]\D\w+",text,re.MULTILINE)
@@ -126,7 +144,7 @@ class pdfDataObject:
                     self.data["author2"] = fullName[0]
                 else:
                     self.data["author2"] = ""
-            self.showInfo()
+            self.insertValues(dbpath)
             self.data.clear()
                 
     
@@ -150,7 +168,7 @@ class pdfDataObject:
     def collectAll(self,pdfPage,allPDFs):
         response = urllib.request.urlopen(pdfPage).read()
         soup = BeautifulSoup(response,features="lxml")
-        links = soup.find_all("a", href=re.compile(r'(.pdf)'))
+        links = soup.find_all("a", href=re.compile(r'(\.pdf)'))
         for link in links:
             allPDFs.append(link["href"])
 
@@ -169,7 +187,7 @@ def main():
     db = pdfobj.create_connectDB()
     URL = pdfobj.parseURL()
     allPdfs = pdfobj.collectAll(URL,allPDFs)
-    pdfobj.build(allPDFs)
+    pdfobj.build(allPDFs,db)
    
     
     
