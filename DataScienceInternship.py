@@ -111,40 +111,36 @@ class pdfDataObject:
                     self.data[key] = 1
                 else:
                     self.data[key] = 0
+            string = re.findall(r"FROM+\W\s\D+$",text,re.MULTILINE)
             if not "Savannah" in self.data["Site"]: 
-                initials = re.findall(r"[A-Z]\.\s[A-Z][a-z]*",text,re.MULTILINE)
-                fullName = re.findall(r"[A-Z][a-z]{6}\s[A-Z]\D\w+",text,re.MULTILINE)
-                namesWithInitials = re.findall(r"[A-Z][a-z]+\s.\.\B\s\w*",text,re.MULTILINE)
+                initials = re.findall(r"[A-Z]\.\s[A-Z][a-z]*",string[0])
+                fullName = re.findall(r"[A-Z][a-z]{6}\s[A-Z]\D\w+",string[0])
+                namesWithInitials = re.findall(r"[A-Z][a-z]+\s.\.\B\s\w*",string[0])
             else:
-                initials = re.findall(r"[A-Z]\.\s[A-Z]\w+",text,re.MULTILINE)
-                fullName = re.findall(r"[A-Z][a-z]{6}\s[A-Z]\D\w+",text,re.MULTILINE)
-                namesWithInitials = re.findall(r"[A-Z][a-z]+\s.\.\B\s\w*",text,re.MULTILINE)
-            if fullName:
-                self.data["author1"] = fullName[0]
-                if len(fullName) > 1:
-                    self.data["author2"] = fullName[1]
-            if len(namesWithInitials) <= 2:
-                if len(initials) > 2:
-                    self.data["author1"] = initials[1]
-                    self.data["author2"] = initials[2]
-                elif len(initials) != 1: 
-                    self.data["author1"] = initials[1]
-                    if fullName:
-                        self.data["author2"] = fullName[0]
-                    else:
-                        self.data["author2"] = ""
-            else:
-                namesWithInitials.pop(0)
-                initials.pop(0)
-                for i in range(len(namesWithInitials)):
-                    for j in range(len(initials)):
-                        if initials[j] in namesWithInitials[i]:
-                            self.data["author1"] = namesWithInitials[i]
-                if not "author2" in self.data and fullName:
+                initials = re.findall(r"[A-Z]\.\s[A-Z]\w+",string[0])
+                fullName = re.findall(r"[A-Z][a-z]{6}\s[A-Z]\D\w+",string[0])
+                namesWithInitials = re.findall(r"[A-Z][a-z]+\s.\.\B\s\w*",string[0])
+            if initials and namesWithInitials:
+                if initials[0] in namesWithInitials[0]:
+                    self.data["author1"] = namesWithInitials[0]
+                if fullName:
                     self.data["author2"] = fullName[0]
                 else:
                     self.data["author2"] = ""
-            self.insertValues(dbpath)
+            if initials and not 'author2' in self.data:
+                self.data["author1"] = initials[0]
+                self.data["author2"] = ""
+            if len(fullName) > 1:
+                self.data["author1"] = fullName[0]
+                self.data["author2"] = fullName[1]
+            elif len(initials) == 2:
+                self.data["author1"] = initials[0]
+                self.data["author2"] = initials[1]
+            elif len(namesWithInitials) == 2:
+                self.data["author1"] = namesWithInitials[0]
+                self.data["author2"] = namesWithInitials[1]
+            self.showInfo()
+            #self.insertValues(dbpath)
             self.data.clear()
                 
     
@@ -173,7 +169,7 @@ class pdfDataObject:
             allPDFs.append(link["href"])
 
         links = soup.find("a", string=re.compile("next"))
-        if links is None or len(allPDFs) >= 10:
+        if links is None or len(allPDFs) >= 500:
             return allPDFs
         else:
             pdfPage = self.link + links.get("href")
@@ -189,7 +185,6 @@ def main():
     allPdfs = pdfobj.collectAll(URL,allPDFs)
     pdfobj.build(allPDFs,db)
    
-    
     
 if __name__ == "__main__":
     main()
