@@ -92,7 +92,15 @@ class pdfDataObject:
             
             raw = parser.from_file(file)
             text = raw['content']
-            title = raw['metadata']['dc:title']
+            if 'dc:title' in raw['metadata']:
+                title = raw['metadata']['dc:title']
+            else:
+                pseudoTitle = raw['metadata']['resourceName']
+                pseudoTitle = pseudoTitle.rstrip(".pdf")
+                pseudoTitle = pseudoTitle.split(" ")
+                pseudoTitle[-2] = pseudoTitle[-2]+ ","
+                pseudoTitle = " ".join(pseudoTitle)
+                title = pseudoTitle
             title = title.split(sep=" ",maxsplit=3)
             if "Week" in title[1]:
                 self.data["Site"] = title[0]
@@ -102,9 +110,11 @@ class pdfDataObject:
                 dateInfo = title[3].split(sep=" ", maxsplit=1)
                 self.data["Date"] = dateInfo[1]
             if 'dateInfo' in locals():
-                dateobj = datetime.strptime(dateInfo[1],'%B %d, %Y')
+                if "Ending" in dateInfo[1]:
+                    dateInfo = dateInfo[1].split(sep=" ", maxsplit=1)
+                dateobj = datetime.strptime(dateInfo[1].rstrip(),'%B %d, %Y')
             else:
-                dateobj = datetime.strptime(title[3],'%B %d, %Y')
+                dateobj = datetime.strptime(title[3].rstrip(),'%B %d, %Y')
             self.data["ID"] = title[0][0] + str(dateobj.date())
             for key in self.keys:
                 if text.find(key) != -1:
@@ -139,8 +149,12 @@ class pdfDataObject:
             elif len(namesWithInitials) == 2:
                 self.data["author1"] = namesWithInitials[0]
                 self.data["author2"] = namesWithInitials[1]
+            if not "author1" in self.data:
+                if fullName:
+                    self.data["author1"] = fullName[0]
+                    self.data["author2"] = ""       
             self.showInfo()
-            #self.insertValues(dbpath)
+            self.insertValues(dbpath)
             self.data.clear()
                 
     
@@ -169,7 +183,7 @@ class pdfDataObject:
             allPDFs.append(link["href"])
 
         links = soup.find("a", string=re.compile("next"))
-        if links is None or len(allPDFs) >= 500:
+        if links is None or len(allPDFs) >= 450:
             return allPDFs
         else:
             pdfPage = self.link + links.get("href")
