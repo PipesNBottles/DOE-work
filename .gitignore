@@ -1,6 +1,4 @@
 *.pdf
 *.db
 *.txt
-.vscode/*
-.vscode/settings.json
-.vscode/launch.json
+.vscode/
