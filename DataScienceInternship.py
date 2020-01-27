@@ -24,6 +24,7 @@ class pdfDataObject:
         conn = sqlite3.connect(path) 
         cursor = conn.cursor()
         try:
+            print("attempting to create database")
             cursor.execute(
             """
             --sql
@@ -48,7 +49,7 @@ class pdfDataObject:
             conn.commit()
             conn.close()
         except sqlite3.OperationalError as dbExists:
-            print("Data base exists: ", dbExists)
+            print(dbExists)
         return path
     
     def insertValues(self,path):
@@ -195,7 +196,22 @@ class pdfDataObject:
         else:
             pdfPage = self.link + links.get("href")
             return self.collectAll(pdfPage,allPDFs)
-        
+
+class visualDataObject:
+    def __init__(self):
+        #I have no idea what to do hear
+        print("new object")
+    
+    def splitDataBySite:
+        #work in progress
+    
+    def splitDataByAuthor:
+        #work in progress
+    
+    def splitDataByTerm:
+        #work in progress
+
+
     
 def main():
     
