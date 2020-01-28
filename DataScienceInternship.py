@@ -202,14 +202,17 @@ class visualDataObject:
         #I have no idea what to do hear
         print("new object")
     
-    def splitDataBySite:
+    def splitDataBySite(self):
         #work in progress
+        print("new object")
     
-    def splitDataByAuthor:
+    def splitDataByAuthor(self):
         #work in progress
+        print("new object")
     
-    def splitDataByTerm:
+    def splitDataByTerm(self):
         #work in progress
+        print("new object")
 
 
     
