@@ -127,17 +127,19 @@ class pdfDataObject:
                 initials = re.findall(r"[A-Z]\.\s[A-Z][a-z]*",string[0])
                 fullName = re.findall(r"[A-Z][a-z]{6}\s[A-Z]\D\w+",string[0])
                 namesWithInitials = re.findall(r"[A-Z][a-z]+\s.\.\B\s\w*",string[0])
-                acting = re.findall(r"[A-za-z]+\s[A-Za-z]+\s",string[0])
+                acting = re.findall(r"[A-za-z]+\s[A-Za-z]+\s\(",string[0])
             else:
                 initials = re.findall(r"[A-Z]\.\s[A-Z]\w+",string[0])
                 fullName = re.findall(r"[A-Z][a-z]{6}\s[A-Z]\D\w+",string[0])
                 namesWithInitials = re.findall(r"[A-Z][a-z]+\s.\.\B\s\w*",string[0])
-                acting = re.findall(r"[A-za-z]+\s[A-Za-z]+\s",string[0])
+                acting = re.findall(r"[A-za-z]+\s[A-Za-z]+\s\(",string[0])
             if acting:
+                acting[0] = acting[0].rstrip("(")
                 self.data["author1"] = acting[0]
                 if len(acting) > 1:
                     self.data["author2"] = acting[1]
-                self.data["author2"] = ""
+                else:
+                    self.data["author2"] = ""
             if initials and namesWithInitials:
                 if initials[0] in namesWithInitials[0]:
                     self.data["author1"] = namesWithInitials[0]
@@ -213,8 +215,6 @@ class visualDataObject:
     def splitDataByTerm(self):
         #work in progress
         print("new object")
-
-
     
 def main():
     
