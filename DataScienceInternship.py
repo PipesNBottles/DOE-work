@@ -48,6 +48,7 @@ class pdfDataObject:
             )
             conn.commit()
             conn.close()
+            print("Success!")
         except sqlite3.OperationalError as dbExists:
             print(dbExists)
         return path
@@ -93,46 +94,51 @@ class pdfDataObject:
             
             raw = parser.from_file(file)
             text = raw['content']
-            if 'dc:title' in raw['metadata']:
-                title = raw['metadata']['dc:title']
+            siteString = re.findall(r"SUBJECT:[A-Za-z\s]+Ac",text,re.MULTILINE)
+            dateString = re.findall(r"[A-Z][a-z]+\s\d{1,2}\,?\s\d+",text,re.MULTILINE)
+
+            if not siteString:
+                siteString = re.findall(r"SUBJECT:\s?[A-Z][a-z]+\s[A-Z][a-z]+",text,re.MULTILINE)
+                siteString = siteString[0].split(" ")
+                siteString.pop(0)   
             else:
-                pseudoTitle = fileName
-                pseudoTitle = pseudoTitle.rstrip(".pdf")
-                pseudoTitle = pseudoTitle.split(" ")
-                pseudoTitle[-2] = pseudoTitle[-2]+ ","
-                pseudoTitle = " ".join(pseudoTitle)
-                title = pseudoTitle
-            title = title.split(sep=" ",maxsplit=3)
-            if "Week" in title[1]:
-                self.data["Site"] = title[0]
-                self.data["Date"] = title[3]
-            else:
-                self.data["Site"] = title[0] + " " + title[1]
-                dateInfo = title[3].split(sep=" ", maxsplit=1)
-                self.data["Date"] = dateInfo[1]
-            if 'dateInfo' in locals():
-                if "Ending" in dateInfo[1]:
-                    dateInfo = dateInfo[1].split(sep=" ", maxsplit=1)
-                dateobj = datetime.strptime(dateInfo[1].rstrip(),'%B %d, %Y')
-            else:
-                dateobj = datetime.strptime(title[3].rstrip(),'%B %d, %Y')
-            self.data["ID"] = title[0][0] + str(dateobj.date())
+                siteString = siteString[0].split(" ")
+                siteString.pop()
+                siteString.pop(0)
+
+            siteString = " ".join(siteString)
+            siteString = siteString.lstrip()
+
+            dateString = dateString[0].split(" ")
+            if not ',' in dateString[1]:
+                dateString[1] = dateString[1] + ","
+            dateString = " ".join(dateString)
+
+            self.data["Site"] = siteString
+            self.data["Date"] = dateString
+            dateobj = datetime.strptime(dateString.rstrip(),'%B %d, %Y')
+            self.data["ID"] = siteString[0] + str(dateobj.date())
+            
             for key in self.keys:
                 if text.find(key) != -1:
                     self.data[key] = 1
                 else:
                     self.data[key] = 0
+            
             string = re.findall(r"FROM+\W\s\D+$",text,re.MULTILINE)
+            
             if not "Savannah" in self.data["Site"]: 
                 initials = re.findall(r"[A-Z]\.\s[A-Z][a-z]*",string[0])
-                fullName = re.findall(r"[A-Z][a-z]{6}\s[A-Z]\D\w+",string[0])
-                namesWithInitials = re.findall(r"[A-Z][a-z]+\s.\.\B\s\w*",string[0])
-                acting = re.findall(r"[A-za-z]+\s[A-Za-z]+\s\(",string[0])
             else:
                 initials = re.findall(r"[A-Z]\.\s[A-Z]\w+",string[0])
-                fullName = re.findall(r"[A-Z][a-z]{6}\s[A-Z]\D\w+",string[0])
-                namesWithInitials = re.findall(r"[A-Z][a-z]+\s.\.\B\s\w*",string[0])
-                acting = re.findall(r"[A-za-z]+\s[A-Za-z]+\s\(",string[0])
+            
+            fullName = re.findall(r"[A-Z][a-z]+\s[A-Z]\D\w+",string[0])
+            namesWithInitials = re.findall(r"[A-Z][a-z]+\s.\.\B\s\w*",string[0])
+            acting = re.findall(r"[A-z][a-z]+\s[A-Z][a-z]+\s\(",string[0])
+            
+            if fullName:
+                fullName.pop()
+            
             if acting:
                 acting[0] = acting[0].rstrip("(")
                 self.data["author1"] = acting[0]
@@ -193,7 +199,7 @@ class pdfDataObject:
             allPDFs.append(link["href"])
 
         links = soup.find("a", string=re.compile("next"))
-        if links is None or len(allPDFs) >= 450:
+        if links is None or len(allPDFs) >= 500:
             return allPDFs
         else:
             pdfPage = self.link + links.get("href")
