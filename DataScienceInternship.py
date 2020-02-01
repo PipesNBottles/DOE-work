@@ -7,7 +7,9 @@ import urllib.request
 import sys, os
 from pathlib import Path
 from datetime import datetime
-
+import scipy
+import pandas
+import requests
 class pdfDataObject:
     keys = ["analysis", "software", "embedded", "database", "spreadsheet", "firmware", "calculation", "programming", "test"]
     
@@ -99,12 +101,12 @@ class pdfDataObject:
 
             if not siteString:
                 siteString = re.findall(r"SUBJECT:\s?[A-Z][a-z]+\s[A-Z][a-z]+",text,re.MULTILINE)
-                siteString = siteString[0].split(" ")
-                siteString.pop(0)   
+                siteString = siteString[0].split(" ")  
             else:
                 siteString = siteString[0].split(" ")
                 siteString.pop()
-                siteString.pop(0)
+            
+            siteString.pop(0)
 
             siteString = " ".join(siteString)
             siteString = siteString.lstrip()
@@ -174,7 +176,28 @@ class pdfDataObject:
             self.data.clear()
                 
     
-    def parseURL(self): #eliminate this, better idea later
+    def parseURL(self, keyword, start_date, end_date):
+        print("site URL is ", self.link)
+        URL = self.link 
+        page = urllib.request.urlopen(URL).read()
+        parseDoc = BeautifulSoup(page, features="lxml")
+        links = parseDoc.find_all(href=re.compile("reports"), limit=2)
+        links = links[0]       
+        URL = URL +links["href"]
+        search_terms = {"search_api_views_fulltext": keyword, 
+                        "field_date_value": start_date, 
+                        "field_date_value2": end_date}
+        
+        with requests.get(URL, params=search_terms) as requestObj: 
+            URL = requestObj.url
+            page = urllib.request.urlopen(URL).read()
+            parseDoc = BeautifulSoup(page,features="lxml")
+            link = parseDoc.find(attrs={"class": "leaf first"})
+            another = link.a
+            URL = self.link + another["href"]
+        return URL
+    
+    def parseURLAll(self):
         print("site URL is ", self.link)
         URL = self.link 
         page = urllib.request.urlopen(URL).read()
@@ -194,40 +217,56 @@ class pdfDataObject:
     def collectAll(self,pdfPage,allPDFs):
         response = urllib.request.urlopen(pdfPage).read()
         soup = BeautifulSoup(response,features="lxml")
-        links = soup.find_all("a", href=re.compile(r'(\.pdf)'))
-        for link in links:
-            allPDFs.append(link["href"])
+        next_page = soup.find("a", title="Go to next page")
+        while next_page != None and len(allPDFs) <= 500:
+            pdfPage = self.link + next_page.get("href")
+            response = urllib.request.urlopen(pdfPage).read()
+            soup = BeautifulSoup(response,features="lxml")
+            links = soup.find_all("a", href=re.compile(r'(\.pdf)'))
+            next_page = soup.find("a", title="Go to next page")
+            for link in links:
+                allPDFs.append(link["href"])
+        return allPDFs
 
-        links = soup.find("a", string=re.compile("next"))
-        if links is None or len(allPDFs) >= 500:
-            return allPDFs
-        else:
-            pdfPage = self.link + links.get("href")
-            return self.collectAll(pdfPage,allPDFs)
-
-class visualDataObject:
-    def __init__(self):
-        #I have no idea what to do hear
-        print("new object")
+class dbObject:
+    def __init__(self,db):
+        self.path = db
+        
     
     def splitDataBySite(self):
         #work in progress
+        #change to lambda
         print("new object")
     
     def splitDataByAuthor(self):
         #work in progress
+        #change to lambda
         print("new object")
     
     def splitDataByTerm(self):
         #work in progress
+        #change to lambda
         print("new object")
     
 def main():
+    if len(sys.argv) == 4:
+        keyword, start_date, end_date = sys.argv[1], sys.argv[2], sys.argv[3]
+    elif len(sys.argv) == 3:
+        keyword, start_date, end_date = "", sys.argv[1], sys.argv[2]
+    elif len(sys.argv) == 1:
+        print("will scrap and download everything, warning will take a while!")
+        all_docs = True
+    else:
+        print("error, syntax is keyword to search for, start_date, end_date or simpley start and end")
+        exit()
     
     allPDFs = []
     pdfobj = pdfDataObject("https://www.dnfsb.gov/")
     db = pdfobj.create_connectDB()
-    URL = pdfobj.parseURL()
+    if not 'all_docs' in locals():
+        URL = pdfobj.parseURL(keyword,start_date,end_date)
+    else:
+        URL = pdfobj.parseURLAll()
     allPdfs = pdfobj.collectAll(URL,allPDFs)
     pdfobj.build(allPDFs,db)
    
