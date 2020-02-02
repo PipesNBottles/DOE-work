@@ -10,6 +10,10 @@ from datetime import datetime
 import scipy
 import pandas
 import requests
+
+#pdfDataObject initializes a database and creates the table at the top of the tree structure
+#will also perform the http requests for the dnfsb.gov site and download all pdfs
+#after an array of pdf links are created, the class will parse the data and insert into the table
 class pdfDataObject:
     keys = ["analysis", "software", "embedded", "database", "spreadsheet", "firmware", "calculation", "programming", "test"]
     
@@ -19,6 +23,8 @@ class pdfDataObject:
         self.link = link
     
     def create_connectDB(self):
+        #will create the database and table DOE_BASE upon initialization if said table doesn't exist already
+        #database file is stored in directory of the script
         path = Path(__file__).parent
         db = "DOE.db" #come up with better name for database later
         path = path.joinpath(db)
@@ -52,6 +58,8 @@ class pdfDataObject:
         return path
     
     def insertValues(self,path):
+        #will insert values based on the primary key (ID) of the entry 
+        #if the ID already exist then the database will promptly ignore the current entry
         toople = (self.data["ID"],self.data["Date"],self.data["Site"],self.data["author1"],
                   self.data["author2"],self.data["analysis"],self.data["software"],
                   self.data["embedded"], self.data["database"],self.data["spreadsheet"],
@@ -81,6 +89,7 @@ class pdfDataObject:
 
     
     def build(self,allPDFs,dbpath):
+        #grabs the link of each pdf from the site in memory and downloads if doesn't already exist
         for pdf in allPDFs:
             split = urllib.parse.urlparse(pdf).path
             fileName = urllib.parse.unquote(split)
@@ -90,6 +99,10 @@ class pdfDataObject:
                 urllib.request.urlretrieve(pdf,path)
             file = str(path)
             
+            #due to the fact all pdfs are in the same* format (varying degrees)
+            #simply use regex to find the site and date of when the report was written
+            #and perform string manipulation to clean it for database entry
+            #uses the datetime library to parse the date and generate the ID
             raw = parser.from_file(file)
             text = raw['content']
             siteString = re.findall(r"SUBJECT:[A-Za-z\s]+Ac",text,re.MULTILINE)
@@ -117,12 +130,18 @@ class pdfDataObject:
             dateobj = datetime.strptime(dateString.rstrip(),'%B %d, %Y')
             self.data["ID"] = siteString[0] + str(dateobj.date())
             
+            #searches the pdf for the apropriate terms to determine if there's a software
+            #related QA issue at the DOE site
             for key in self.keys:
                 if text.find(key) != -1:
                     self.data[key] = 1
                 else:
                     self.data[key] = 0
             
+            #same logic as above but to find the authors names
+            #unfortunately names can be written any number of ways and 
+            #searching for them all can be costly, thus the least likely
+            #names/scenarios are checked first and over written accordingly
             string = re.findall(r"FROM+\W\s\D+$",text,re.MULTILINE)
             
             if not "Savannah" in self.data["Site"]: 
@@ -172,6 +191,8 @@ class pdfDataObject:
             self.data.clear()
                 
     
+    #utilizing requests and beautiful soup we can parse the HTTP address and search
+    #for pdfs within a desired time range and keywords
     def parseURL(self, keyword, start_date, end_date):
         print("site URL is ", self.link)
         URL = self.link 
@@ -193,6 +214,8 @@ class pdfDataObject:
             URL = self.link + another["href"]
         return URL
     
+    #same as previous function but prepares the HTTP address to collect all pdfs from 
+    #the current date to whenever the first the report was uploaded
     def parseURLAll(self):
         print("site URL is ", self.link)
         URL = self.link 
@@ -209,7 +232,8 @@ class pdfDataObject:
         URL = URL + another["href"]
         return URL
     
-    
+    #loop is O(n) as no page is longer than 10 pdf links long
+    #will constantly manipulate the address until Beautiful Soup fails
     def collectAll(self,pdfPage,allPDFs):
         response = urllib.request.urlopen(pdfPage).read()
         soup = BeautifulSoup(response,features="lxml")
@@ -224,6 +248,8 @@ class pdfDataObject:
                 allPDFs.append(link["href"])
         return allPDFs
 
+#creates the dbObject and then the rest of the relational database structure based on site location
+#can be joined using the IDs, authors or other values
 class dbObject:
     def __init__(self,db):
         conn = sqlite3.connect(db)
