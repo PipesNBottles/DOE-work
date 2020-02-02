@@ -226,8 +226,22 @@ class pdfDataObject:
 
 class dbObject:
     def __init__(self,db):
-        self.path = db
-        
+        conn = sqlite3.connect(db)
+        cursor = conn.cursor()
+        cursor.execute("select distinct site from doe_base;")
+        uniqueSites = cursor.fetchall()
+        for site in uniqueSites:
+            siteName = site[0]
+            siteName = siteName.split(" ")
+            siteName = "_".join(siteName)
+            sql = "create table if not exists " +  siteName + " as "
+            sql += """SELECT ID, date, Site, author_1, author_2, ANALYSIS, 
+                    SOFTWARE, EMBEDDED, DATABASE, SPREADSHEET, FIRMWARE,
+                    CALCULATION, PROGRAMMING, TEST FROM DOE_BASE 
+                    where site = ?;"""
+            cursor.execute(sql, site)
+        cursor.close()
+
     
     def splitDataBySite(self):
         #work in progress
@@ -259,13 +273,13 @@ def main():
     allPDFs = []
     pdfobj = pdfDataObject("https://www.dnfsb.gov/")
     db = pdfobj.create_connectDB()
-    if not 'all_docs' in locals():
+    """ if not 'all_docs' in locals():
         URL = pdfobj.parseURL(keyword,start_date,end_date)
     else:
         URL = pdfobj.parseURLAll()
     allPdfs = pdfobj.collectAll(URL,allPDFs)
-    pdfobj.build(allPDFs,db)
-   
+    pdfobj.build(allPDFs,db) """
+    DatO =  dbObject(db)
     
 if __name__ == "__main__":
     main()
