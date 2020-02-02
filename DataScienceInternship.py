@@ -25,34 +25,30 @@ class pdfDataObject:
         path = str(path)
         conn = sqlite3.connect(path) 
         cursor = conn.cursor()
-        try:
-            print("attempting to create database")
-            cursor.execute(
-            """
-            --sql
-            create table DOE_BASE(
-                ID TEXT PRIMARY KEY,
-                DATE TEXT,
-                SITE TEXT,
-                AUTHOR_1 TEXT,
-                AUTHOR_2 TEXT,
-                ANALYSIS INTEGER,
-                SOFTWARE INTEGER,
-                EMBEDDED INTEGER,
-                DATABASE INTEGER,
-                SPREADSHEET INTEGER,
-                FIRMWARE INTEGER,
-                CALCULATION INTEGER,
-                PROGRAMMING INTEGER,
-                TEST INTEGER
-            );
-            """
-            )
-            conn.commit()
-            conn.close()
-            print("Success!")
-        except sqlite3.OperationalError as dbExists:
-            print(dbExists)
+        print("attempting to create database")
+        cursor.execute(
+        """
+        --sql
+        create table if not exists DOE_BASE(
+            ID TEXT PRIMARY KEY,
+            DATE TEXT,
+            SITE TEXT,
+            AUTHOR_1 TEXT,
+            AUTHOR_2 TEXT,
+            ANALYSIS INTEGER,
+            SOFTWARE INTEGER,
+            EMBEDDED INTEGER,
+            DATABASE INTEGER,
+            SPREADSHEET INTEGER,
+            FIRMWARE INTEGER,
+            CALCULATION INTEGER,
+            PROGRAMMING INTEGER,
+            TEST INTEGER
+        );
+        """
+        )
+        conn.commit()
+        conn.close()
         return path
     
     def insertValues(self,path):
@@ -218,7 +214,7 @@ class pdfDataObject:
         response = urllib.request.urlopen(pdfPage).read()
         soup = BeautifulSoup(response,features="lxml")
         next_page = soup.find("a", title="Go to next page")
-        while next_page != None and len(allPDFs) <= 500:
+        while next_page != None:
             pdfPage = self.link + next_page.get("href")
             response = urllib.request.urlopen(pdfPage).read()
             soup = BeautifulSoup(response,features="lxml")
