@@ -273,12 +273,12 @@ def main():
     allPDFs = []
     pdfobj = pdfDataObject("https://www.dnfsb.gov/")
     db = pdfobj.create_connectDB()
-    """ if not 'all_docs' in locals():
+    if not 'all_docs' in locals():
         URL = pdfobj.parseURL(keyword,start_date,end_date)
     else:
         URL = pdfobj.parseURLAll()
     allPdfs = pdfobj.collectAll(URL,allPDFs)
-    pdfobj.build(allPDFs,db) """
+    pdfobj.build(allPDFs,db)
     DatO =  dbObject(db)
     
 if __name__ == "__main__":
