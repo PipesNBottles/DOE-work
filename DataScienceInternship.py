@@ -10,6 +10,7 @@ from datetime import datetime
 import scipy
 import pandas
 import requests
+from data_class import dbObject
 
 #pdfDataObject initializes a database and creates the table at the top of the tree structure
 #will also perform the http requests for the dnfsb.gov site and download all pdfs
