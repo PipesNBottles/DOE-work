@@ -1,5 +1,7 @@
 #creates the dbObject and then the rest of the relational database structure based on site location
 #can be joined using the IDs, authors or other values
+import sqlite3
+
 class dbObject:
     def __init__(self,db):
         conn = sqlite3.connect(db)
