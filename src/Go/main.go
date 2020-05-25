@@ -8,16 +8,36 @@ import (
 	"os"
 	"time"
 
-	"github.com/PuerkitoBio/goquery"
+	"golang.org/x/net/html"
 )
 
 func main() {
-	for i := 0; i < 10; i++ {
-		go f(10)
+	BaseURL := "https://www.dnfsb.gov/documents/reports"
+	response, err := http.Get(BaseURL)
+	checkError(err)
+	defer response.Body.Close()
+
+	token := html.NewTokenizer(response.Body)
+
+	for {
+		tt := token.Next()
+
+		switch {
+		case tt == html.ErrorToken:
+			break
+
+		case tt == html.StartTagToken:
+			newToken := token.Token()
+			if newToken.Data == "a" {
+				for _, a := range newToken.Attr {
+					if a.Key == "href" {
+						fmt.Println(a.Val)
+					}
+				}
+			}
+		}
 	}
-	var input string
-	fmt.Scan(&input)
-	fmt.Println(input)
+
 }
 
 func f(n int) {
@@ -29,28 +49,9 @@ func f(n int) {
 	fmt.Println()
 }
 
-func test() {
-	BaseURL := "https://www.dnfsb.gov/documents/reports"
-	response, err := http.Get(BaseURL)
-	checkError(err)
-	defer response.Body.Close()
-
-	document, err := goquery.NewDocumentFromReader(response.Body)
-	checkError(err)
-	document.Find("a").Each(processElement)
-
-}
-
 func checkError(err error) {
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
-	}
-}
-
-func processElement(index int, element *goquery.Selection) {
-	href, exists := element.Attr("href")
-	if exists {
-		fmt.Println(href)
 	}
 }
